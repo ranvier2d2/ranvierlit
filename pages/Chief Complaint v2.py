@@ -21,8 +21,8 @@ def load_css(file_name):
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 load_css(css_file_path)
 
-# Retrieve the API key from Streamlit secrets
-google_api_key = st.secrets["GOOGLE_API_KEY"]
+# Retrieve the API key from environment variables
+google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
     st.error("GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable.")

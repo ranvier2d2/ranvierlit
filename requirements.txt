@@ -5,3 +5,5 @@ altair>=4.0
 crewai 
 langchain_google_genai 
 nest_asyncio
+streamlit
+langchain_groq

@@ -16,10 +16,10 @@ def main():
 
     llm = ChatGroq(
             temperature=0, 
-            groq_api_key = st.secrets["GROQ_API_KEY"], 
+            groq_api_key = os.getenv("GROQ_API_KEY"), 
             model_name=model
         )
-
+    
     # Streamlit UI
     st.title('CrewAI Machine Learning Assistant')
     multiline_text = """

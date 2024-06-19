@@ -41,8 +41,8 @@ except RuntimeError as e:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-# Retrieve the API key from Streamlit secrets
-google_api_key = st.secrets["GOOGLE_API_KEY"]
+# Retrieve the API key from environment variables
+google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
     st.error("GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable.")

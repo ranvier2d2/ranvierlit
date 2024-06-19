@@ -1,0 +1,13 @@
+modules = ["python-3.12", "web"]
+run = "streamlit run Home.py"
+
+[nix]
+channel = "stable-23_11"
+
+[deployment]
+run = "streamlit run --server.address 0.0.0.0 --server.headless true --server.enableCORS=false --server.enableWebsocketCompression=false Home.py"
+deploymentTarget = "cloudrun"
+
+[[ports]]
+localPort = 8501
+externalPort = 80
