@@ -4,6 +4,7 @@ import nest_asyncio
 from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
+import logging
 
 # Configure logging
 logging.basicConfig(
