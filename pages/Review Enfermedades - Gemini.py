@@ -11,12 +11,16 @@ nest_asyncio.apply()
 # Set page config once here
 st.set_page_config(page_title='Ranvier - Kronika', page_icon='🧠')
 st.title("Review Enfermedades por IA ✨ ")
-st.write("Welcome to the Ranvier-Kronika AI Skill sites. Use the sidebar to navigate to different pages.")
+st.write(
+    "Welcome to the Ranvier-Kronika AI Skill sites. Use the sidebar to navigate to different pages."
+)
+
 
 # Function to load CSS
 def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
 
 # Load the CSS file
 load_css("styles.css")
@@ -32,7 +36,6 @@ with st.expander('Acerca de esta aplicación'):
     3. Los resultados se mostrarán una vez que la investigación esté completa.
     ''')
 
-
 # Ensure there is an event loop
 try:
     loop = asyncio.get_event_loop()
@@ -45,7 +48,9 @@ except RuntimeError as e:
 google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
-    st.error("GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable.")
+    st.error(
+        "GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable."
+    )
     st.stop()
 
 # Initialize the language model
@@ -53,126 +58,121 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
 # Define agents with verbose mode and backstories
 researcher = Agent(
-    role='Medico Internista',
+    role='Medico Internista Jefe de Reunion Clinica',
     goal='Recopilar información completa sobre {disease_name}',
     tools=[],
     verbose=True,
-    backstory=(
-        "Un experimentado investigador médico con enfoque en epidemiología y fisiopatología.\n"
-        "Para investigar {disease_name}, recopila información sobre:\n"
-        "1. Características clínicas clave: signos, síntomas, sistemas corporales afectados, curso de la enfermedad y pronóstico\n"
-        "2. Epidemiología: incidencia, prevalencia, poblaciones de alto riesgo, factores de riesgo y causas\n"
-        "3. Fisiopatología: mecanismos biológicos subyacentes, función orgánica alterada, factores genéticos y ambientales\n"
-        "4. Estrategias diagnósticas: evaluación diagnóstica típica, hallazgos clave en la historia y el examen, pruebas de laboratorio y estudios de imagen, pruebas especializadas"
-    ),
+    backstory=
+    ("Un experimentado investigador médico con enfoque en epidemiología y fisiopatología.\n"
+     "Para investigar {disease_name}, recopila información sobre:\n"
+     "1. Características clínicas clave: signos, síntomas, sistemas corporales afectados, curso de la enfermedad y pronóstico\n"
+     "2. Epidemiología: incidencia, prevalencia, poblaciones de alto riesgo, factores de riesgo y causas\n"
+     "3. Fisiopatología: mecanismos biológicos subyacentes, función orgánica alterada, factores genéticos y ambientales\n"
+     "4. Estrategias diagnósticas: evaluación diagnóstica típica, hallazgos clave en la historia y el examen, pruebas de laboratorio y estudios de imagen, pruebas especializadas"
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 analyst = Agent(
-    role='Analista',
+    role='Epidemiologo Jefe',
     goal='Analizar y sintetizar datos recopilados sobre {disease_name}',
     tools=[],
     verbose=True,
-    backstory=(
-        "Un hábil analista de datos con experiencia en análisis de datos médicos y predicción de resultados.\n"
-        "Al analizar información sobre {disease_name}:\n"
-        "1. Evaluar enfoques de manejo: objetivos del tratamiento, terapias médicas y quirúrgicas, cuidado multidisciplinario\n"
-        "2. Analizar complicaciones y seguimiento: principales complicaciones, planes de monitoreo y seguimiento, factores que influyen en los resultados\n"
-        "3. Utilizar recursos de información de alta calidad: libros de texto médicos, artículos de revistas, guías de sociedades internacionales, recomendaciones de expertos"
-    ),
+    backstory=
+    ("Un hábil analista de datos con experiencia en análisis de datos médicos y predicción de resultados.\n"
+     "Al analizar información sobre {disease_name}:\n"
+     "1. Evaluar enfoques de manejo: objetivos del tratamiento, terapias médicas y quirúrgicas, cuidado multidisciplinario\n"
+     "2. Analizar complicaciones y seguimiento: principales complicaciones, planes de monitoreo y seguimiento, factores que influyen en los resultados\n"
+     "3. Utilizar recursos de información de alta calidad: libros de texto médicos, artículos de revistas, guías de sociedades internacionales, recomendaciones de expertos"
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 writer = Agent(
-    role='Revisor Jefe de Reunion Clinica',
+    role='Medico Revisor Jefe de Reunion Clinica',
     goal='Compilar hallazgos sobre {disease_name} en una revisión coherente',
     tools=[],
     verbose=True,
-    backstory=(
-        "Un escritor médico competente con habilidad para sintetizar información compleja en documentos claros y concisos.\n"
-        "Para escribir una revisión completa sobre {disease_name}:\n"
-        "1. Sintetizar información para proporcionar una imagen completa de la enfermedad\n"
-        "2. Explicar cómo {disease_name} encaja en los diagnósticos diferenciales de síntomas comunes\n"
-        "3. Discutir cómo se puede aplicar el conocimiento clínicamente para mejorar el razonamiento diagnóstico y la toma de decisiones\n"
-        "4. Utilizar una organización clara con secciones sobre características clínicas, epidemiología, fisiopatología, diagnóstico, manejo y complicaciones"
-    ),
+    backstory=
+    ("Un escritor médico competente con habilidad para sintetizar información compleja en documentos claros y concisos.\n"
+     "Para escribir una revisión completa sobre {disease_name}:\n"
+     "1. Sintetizar información para proporcionar una imagen completa de la enfermedad\n"
+     "2. Explicar cómo {disease_name} encaja en los diagnósticos diferenciales de síntomas comunes\n"
+     "3. Discutir cómo se puede aplicar el conocimiento clínicamente para mejorar el razonamiento diagnóstico y la toma de decisiones\n"
+     "4. Utilizar una organización clara con secciones sobre características clínicas, epidemiología, fisiopatología, diagnóstico, manejo y complicaciones"
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 # Define tasks
 collect_clinical_features_task = Task(
-    description='Recopilar información sobre los signos, síntomas y manifestaciones clínicas típicas de {disease_name}',
-    expected_output='Una lista detallada de características clínicas y curso de la enfermedad de {disease_name}',
+    description=
+    'Recopilar información sobre los signos, síntomas y manifestaciones clínicas típicas de {disease_name}',
+    expected_output=
+    'Una lista detallada de características clínicas y curso de la enfermedad de {disease_name}',
     agent=researcher,
-    context=[]
-)
+    context=[])
 
 determine_epidemiology_task = Task(
-    description='Determinar la incidencia, prevalencia y factores de riesgo de {disease_name}',
+    description=
+    'Determinar la incidencia, prevalencia y factores de riesgo de {disease_name}',
     expected_output='Un resumen de datos epidemiológicos de {disease_name}',
     agent=researcher,
-    context=[collect_clinical_features_task]
-)
+    context=[collect_clinical_features_task])
 
 review_pathophysiology_task = Task(
-    description='Revisar los mecanismos biológicos y factores que conducen a {disease_name}',
-    expected_output='Una explicación detallada de la fisiopatología de {disease_name}',
+    description=
+    'Revisar los mecanismos biológicos y factores que conducen a {disease_name}',
+    expected_output=
+    'Una explicación detallada de la fisiopatología de {disease_name}',
     agent=researcher,
-    context=[determine_epidemiology_task]
-)
+    context=[determine_epidemiology_task])
 
 familiarize_diagnostic_workup_task = Task(
-    description='Familiarizarse con la evaluación diagnóstica, hallazgos clave y pruebas especializadas para {disease_name}',
-    expected_output='Una lista completa de estrategias diagnósticas para {disease_name}',
+    description=
+    'Familiarizarse con la evaluación diagnóstica, hallazgos clave y pruebas especializadas para {disease_name}',
+    expected_output=
+    'Una lista completa de estrategias diagnósticas para {disease_name}',
     agent=researcher,
-    context=[review_pathophysiology_task]
-)
+    context=[review_pathophysiology_task])
 
 review_management_approaches_task = Task(
-    description='Revisar tratamientos médicos y quirúrgicos, y cuidados multidisciplinarios para {disease_name}',
+    description=
+    'Revisar tratamientos médicos y quirúrgicos, y cuidados multidisciplinarios para {disease_name}',
     expected_output='Un resumen de enfoques de manejo para {disease_name}',
     agent=analyst,
-    context=[familiarize_diagnostic_workup_task]
-)
+    context=[familiarize_diagnostic_workup_task])
 
 recognize_complications_task = Task(
-    description='Reconocer complicaciones, monitoreo y planes de seguimiento para {disease_name}',
-    expected_output='Una lista detallada de complicaciones y estrategias de seguimiento para {disease_name}',
+    description=
+    'Reconocer complicaciones, monitoreo y planes de seguimiento para {disease_name}',
+    expected_output=
+    'Una lista detallada de complicaciones y estrategias de seguimiento para {disease_name}',
     agent=analyst,
-    context=[review_management_approaches_task]
-)
+    context=[review_management_approaches_task])
 
 synthesize_information_task = Task(
-    description='Sintetizar toda la información recopilada sobre {disease_name} en una revisión completa',
-    expected_output='Un documento de revisión bien estructurado que integre el conocimiento en el razonamiento clínico para {disease_name}, incluyendo los 5-10 puntos clínicos más importantes',
+    description=
+    'Sintetizar toda la información recopilada sobre {disease_name} en una revisión completa',
+    expected_output=
+    'Un documento de revisión bien estructurado que integre el conocimiento en el razonamiento clínico para {disease_name}, incluyendo los 5-10 puntos clínicos más importantes',
     agent=writer,
     context=[
-        collect_clinical_features_task,
-        determine_epidemiology_task,
-        review_pathophysiology_task,
-        familiarize_diagnostic_workup_task,
-        review_management_approaches_task,
-        recognize_complications_task
-    ]
-)
+        collect_clinical_features_task, determine_epidemiology_task,
+        review_pathophysiology_task, familiarize_diagnostic_workup_task,
+        review_management_approaches_task, recognize_complications_task
+    ])
 
 # Create the crew
-crew = Crew(
-    agents=[researcher, analyst, writer],
-    tasks=[
-        collect_clinical_features_task,
-        determine_epidemiology_task,
-        review_pathophysiology_task,
-        familiarize_diagnostic_workup_task,
-        review_management_approaches_task,
-        recognize_complications_task,
-        synthesize_information_task
-    ],
-    process=Process.sequential
-)
+crew = Crew(agents=[researcher, analyst, writer],
+            tasks=[
+                collect_clinical_features_task, determine_epidemiology_task,
+                review_pathophysiology_task,
+                familiarize_diagnostic_workup_task,
+                review_management_approaches_task,
+                recognize_complications_task, synthesize_information_task
+            ],
+            process=Process.sequential)
 
 # Streamlit input
 disease_name = st.text_input("Ingresa una enfermedad o sindrome:", "")
@@ -186,9 +186,9 @@ if st.button("Iniciar Review"):
         try:
             with st.spinner('Running CrewAI tasks...'):
                 result = crew.kickoff(inputs=inputs)
-                
+
                 st.success("Research completed!")
-                
+
                 detailed_results = []
                 for task in crew.tasks:
                     task_result = task.output
@@ -196,11 +196,11 @@ if st.button("Iniciar Review"):
                         "task": task.description,
                         "result": task_result
                     })
-                
+
                 # Store detailed results and research result in session state
                 st.session_state['detailed_results'] = detailed_results
                 st.session_state['research_result'] = result
-                
+
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
     else:
@@ -209,7 +209,7 @@ if st.button("Iniciar Review"):
 # Show research result
 if 'research_result' in st.session_state:
     st.write(st.session_state['research_result'])
-    
+
 # Show detailed results in an expander
 if 'detailed_results' in st.session_state:
     with st.expander("Show detailed results"):
