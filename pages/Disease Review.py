@@ -49,7 +49,7 @@ if not google_api_key:
     st.stop()
 
 # Initialize the language model
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, max_output_tokens=8192)
 
 # Define agents with verbose mode and backstories
 researcher = Agent(

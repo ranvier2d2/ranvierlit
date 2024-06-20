@@ -40,11 +40,11 @@ if not google_api_key:
     st.stop()
 
 # Initialize the language model
-#llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, max_output_tokens=8192)
-#Uncommment to use gemini 1.5 pro
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
+llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest",
                              temperature=0,
                              max_output_tokens=8192)
+#Uncommment to use gemini 1.5 pro
+#llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-001", temperature=0, max_output_tokens=8192)
 
 # Define agents with enhanced roles, backstories, and goals
 history_taker = Agent(
