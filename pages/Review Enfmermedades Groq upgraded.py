@@ -113,7 +113,7 @@ writer = Agent(
      "2. Pathophysiology and diagnosis.\n"
      "3. Management strategies and complications.\n"
      "4. Clinical applications and decision-making aids."),
-    llm=ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0),
+    llm=ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, max_output_tokens=8192),
     allow_delegation=False)
 
 # Define tasks
