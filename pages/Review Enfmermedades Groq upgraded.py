@@ -19,15 +19,15 @@ st.write(
 
 # Function to load CSS
 def load_css(file_name):
-	with open(file_name) as f:
-		st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    with open(file_name) as f:
+        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
 
 
 # Load the CSS file
 load_css("styles.css")
 
 with st.expander('Acerca de esta aplicación'):
-	st.markdown('''
+    st.markdown('''
 		**¿Qué puede hacer esta aplicación?**
 		Esta aplicación permite a los usuarios iniciar un proceso de investigación integral sobre enfermedades específicas utilizando agentes de CrewAI. Los agentes recopilarán, analizarán y compilarán la información en una revisión coherente.
 
@@ -39,21 +39,21 @@ with st.expander('Acerca de esta aplicación'):
 
 # Ensure there is an event loop
 try:
-	loop = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
 except RuntimeError as e:
-	if "There is no current event loop in thread" in str(e):
-		loop = asyncio.new_event_loop()
-		asyncio.set_event_loop(loop)
+    if "There is no current event loop in thread" in str(e):
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
 # Retrieve the API key from environment variables
 groq_api_key = os.getenv('GROQ_API_KEY')
 google_api_key = os.getenv('GOOGLE_API_KEY')
 
 if not groq_api_key:
-	st.error(
-	    "GROQ_API_KEY environment variable not set. Please set the GROQ_API_KEY environment variable in Replit secrets."
-	)
-	st.stop()
+    st.error(
+        "GROQ_API_KEY environment variable not set. Please set the GROQ_API_KEY environment variable in Replit secrets."
+    )
+    st.stop()
 
 # Set up the customization options
 st.sidebar.title('Customization')
@@ -62,7 +62,9 @@ model = st.sidebar.selectbox(
     ['llama3-8b-8192', 'mixtral-8x7b-32768', 'gemma-7b-it', 'llama3-70b-8192'])
 
 # Initialize the language model with Groq
-llm = ChatGroq(temperature=0, groq_api_key=groq_api_key, model_name=model)
+llm = ChatGroq(temperature=0,
+               groq_api_key=os.getenv("GROQ_API_KEY"),
+               model_name=model)
 
 # Define agents with verbose mode and backstories
 researcher = Agent(
@@ -93,7 +95,7 @@ analyst = Agent(
      "and follow-up strategies for {disease_name}. Focus on: \n"
      "1. Treatment approaches: medical, surgical, multidisciplinary care.\n"
      "2. Complications and follow-up: key complications, monitoring plans, factors influencing outcomes.\n"
-     "3. Evidence-based resources: medical textbooks, journal articles, guidelines, and expert opinions."
+     "3. Evidence-based resources: medical textbooks, journal articles, international society guidelines, and expert opinions."
      ),
     llm=llm,
     allow_delegation=False)
@@ -149,8 +151,9 @@ familiarize_diagnostic_workup_task = Task(
 
 review_management_approaches_task = Task(
     description=
-    'Review medical and surgical treatments and multidisciplinary care for {disease_name}',
-    expected_output='A summary of treatment approaches for {disease_name}',
+    'Review evidence-based medical and surgical treatments and multidisciplinary care for {disease_name}',
+    expected_output=
+    'A summary of evidence-based treatment approaches for {disease_name}',
     agent=analyst,
     context=[familiarize_diagnostic_workup_task])
 
@@ -189,39 +192,39 @@ crew = Crew(agents=[researcher, analyst, writer],
 disease_name = st.text_input("Ingresa una enfermedad o sindrome:", "")
 
 if st.button("Iniciar Review"):
-	if disease_name:
-		st.write(f"Researching {disease_name}...")
-		inputs = {"disease_name": disease_name}
-		try:
-			with st.spinner('Running CrewAI tasks...'):
-				result = crew.kickoff(inputs=inputs)
-				st.success("Research completed!")
+    if disease_name:
+        st.write(f"Researching {disease_name}...")
+        inputs = {"disease_name": disease_name}
+        try:
+            with st.spinner('Running CrewAI tasks...'):
+                result = crew.kickoff(inputs=inputs)
+                st.success("Research completed!")
 
-				detailed_results = []
-				for task in crew.tasks:
-					task_result = task.output
-					detailed_results.append({
-					    "task": task.description,
-					    "result": task_result
-					})
+                detailed_results = []
+                for task in crew.tasks:
+                    task_result = task.output
+                    detailed_results.append({
+                        "task": task.description,
+                        "result": task_result
+                    })
 
-				# Store detailed results and research result in session state
-				st.session_state['detailed_results'] = detailed_results
-				st.session_state['research_result'] = result
+                # Store detailed results and research result in session state
+                st.session_state['detailed_results'] = detailed_results
+                st.session_state['research_result'] = result
 
-		except Exception as e:
-			st.error(f"An error occurred: {str(e)}")
-	else:
-		st.warning("Please enter a disease name.")
+        except Exception as e:
+            st.error(f"An error occurred: {str(e)}")
+    else:
+        st.warning("Please enter a disease name.")
 
 # Show research result
 if 'research_result' in st.session_state:
-	st.write(st.session_state['research_result'])
+    st.write(st.session_state['research_result'])
 
 # Show detailed results in an expander
 if 'detailed_results' in st.session_state:
-	with st.expander("Show detailed results"):
-		for detail in st.session_state['detailed_results']:
-			st.write(f"**Task:** {detail['task']}")
-			st.write(f"**Result:** {detail['result']}")
-			st.write("---")
+    with st.expander("Show detailed results"):
+        for detail in st.session_state['detailed_results']:
+            st.write(f"**Task:** {detail['task']}")
+            st.write(f"**Result:** {detail['result']}")
+            st.write("---")

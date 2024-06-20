@@ -85,7 +85,11 @@ model = st.sidebar.selectbox(
 logging.info(f"Model selected: {model}")
 
 # Initialize the language model with Groq
-llm = ChatGroq(temperature=0, groq_api_key=groq_api_key, model_name=model)
+llm = ChatGroq(
+    temperature=0, 
+    groq_api_key = os.getenv("GROQ_API_KEY"), 
+    model_name=model
+)
 logging.info("Initialized language model with Groq.")
 
 # Define agents with verbose mode and backstories

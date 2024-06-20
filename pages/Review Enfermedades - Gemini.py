@@ -79,7 +79,7 @@ analyst = Agent(
         "Al analizar información sobre {disease_name}:\n"
         "1. Evaluar enfoques de manejo: objetivos del tratamiento, terapias médicas y quirúrgicas, cuidado multidisciplinario\n"
         "2. Analizar complicaciones y seguimiento: principales complicaciones, planes de monitoreo y seguimiento, factores que influyen en los resultados\n"
-        "3. Utilizar recursos de información de alta calidad: libros de texto médicos, artículos de revistas, guías, opiniones de expertos"
+        "3. Utilizar recursos de información de alta calidad: libros de texto médicos, artículos de revistas, guías de sociedades internacionales, recomendaciones de expertos"
     ),
     llm=llm,
     allow_delegation=False
