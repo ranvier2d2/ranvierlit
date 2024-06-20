@@ -53,7 +53,7 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
 # Define agents with verbose mode and backstories
 researcher = Agent(
-    role='Investigador',
+    role='Medico Internista',
     goal='Recopilar información completa sobre {disease_name}',
     tools=[],
     verbose=True,
@@ -86,7 +86,7 @@ analyst = Agent(
 )
 
 writer = Agent(
-    role='Escritor',
+    role='Revisor Jefe de Reunion Clinica',
     goal='Compilar hallazgos sobre {disease_name} en una revisión coherente',
     tools=[],
     verbose=True,

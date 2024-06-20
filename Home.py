@@ -21,11 +21,10 @@ def load_css(file_name):
 load_css("styles.css")
 
 st.title("Ranvier Skills 🧠")
-st.write(
-    "Welcome to the Ranvier-Kronika AI Skill sites. Use the sidebar to navigate to different pages."
-)
 
 # This part is essential for Replit to recognize the script
 if __name__ == "__main__":
     # Main function to run the Streamlit app
-    st.write("Hello, Streamlit!")
+    st.write(
+        "Welcome to the Ranvier-Kronika AI Skill sites. Use the left sidebar to navigate to different pages."
+    )
