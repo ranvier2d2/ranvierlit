@@ -1,7 +1,6 @@
 import os
 import streamlit as st
 import nest_asyncio
-import asyncio
 from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
@@ -16,16 +15,22 @@ st.title('🩺 Chief Complaint Medical Assistant')
 
 # Load the CSS file (ensure this path is correct relative to main.py)
 css_file_path = Path(__file__).parent.parent / "styles.css"
+
+
 def load_css(file_name):
     with open(file_name) as f:
         st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+
+
 load_css(css_file_path)
 
 # Retrieve the API key from environment variables
 google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
-    st.error("GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable.")
+    st.error(
+        "GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable."
+    )
     st.stop()
 
 # Initialize the language model
@@ -33,85 +38,127 @@ llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
 
 # Define agents with verbose mode and backstories
 history_taker = Agent(
-    role='History Taker',
-    goal='Gather comprehensive patient history based on {chief_complaint}',
+    role='Senior Semiology Professor',
+    goal=
+    'Gather a comprehensive patient history and identify areas needing further exploration based on the clinical context of {chief_complaint}.',
     tools=[],
     verbose=True,
-    backstory=(
-        "An experienced clinician skilled in obtaining detailed patient history.\n"
-        "To gather history for {chief_complaint}, focus on:\n"
-        "1. Onset, duration, progression, quality, severity, location, aggravating/relieving factors, and associated symptoms\n"
-        "2. Past medical history, medications, allergies, family history, and social history\n"
-        "3. Review of systems to identify potential symptoms across different body systems"
-    ),
+    backstory=
+    ("You have spent over 20 years in clinical practice, honing your skills in eliciting detailed and accurate patient histories. "
+     "Your meticulous approach ensures that no detail is overlooked, providing a solid foundation for diagnosis related to {chief_complaint}."
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 examiner = Agent(
-    role='Physical Examiner',
-    goal='Perform targeted physical examination based on {chief_complaint} and patient history',
+    role='Senior Semiology Professor',
+    goal=
+    'Perform a targeted physical examination and suggest further examination areas based on initial findings and the clinical context of {chief_complaint}.',
     tools=[],
     verbose=True,
-    backstory=(
-        "A skilled clinician experienced in conducting physical examinations.\n"
-        "When examining a patient with {chief_complaint}:\n"
-        "1. Focus on relevant body systems based on the history and chief complaint\n"
-        "2. Look for signs that can help narrow down the differential diagnosis\n"
-        "3. Document findings thoroughly for further analysis"
-    ),
+    backstory=
+    ("With extensive experience in physical examination and diagnostics, you excel at identifying subtle physical signs that can be crucial for diagnosis. "
+     "Your thorough and systematic approach ensures that all relevant physical findings related to {chief_complaint} are captured."
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 diagnostician = Agent(
-    role='Diagnostician',
-    goal='Generate differential diagnosis and recommend diagnostic tests for {chief_complaint}',
+    role='Head of Internal Medicine Department',
+    goal=
+    'Develop a differential diagnosis and recommend diagnostic tests for {chief_complaint} based on patient history and physical examination findings.',
     tools=[],
     verbose=True,
-    backstory=(
-        "An expert diagnostician well-versed in generating differential diagnoses and selecting appropriate tests.\n"
-        "When approaching a patient with {chief_complaint}:\n"
-        "1. Generate a list of possible diagnoses based on history and examination findings\n"
-        "2. Prioritize diagnoses based on likelihood, severity, and urgency\n"
-        "3. Apply Bayesian reasoning to refine probabilities and guide diagnostic testing"
-    ),
+    backstory=
+    ("A leading figure in the field of diagnostics, you specialize in synthesizing complex clinical information to generate accurate differential diagnoses. "
+     "Your analytical skills and experience allow you to identify the most likely causes and necessary tests for {chief_complaint}."
+     ),
     llm=llm,
-    allow_delegation=False
-)
+    allow_delegation=False)
 
 # Define tasks with context and error handling
 gather_history_task = Task(
-    description='Gather comprehensive patient history based on {chief_complaint}',
-    expected_output='A detailed patient history, including HPI, PMH, medications, allergies, family history, social history, and ROS',
+    description=
+    'Collect a comprehensive patient history based on {chief_complaint}. Document findings from user inputs and suggest areas needing further exploration based on the clinical context of {chief_complaint}.',
+    expected_output=
+    ("Patient History Report for {chief_complaint}:\n"
+     "- **Documented Findings**: \n"
+     "  - History of Present Illness (HPI): Onset, duration, quality, severity, location, and associated symptoms related to {chief_complaint}.\n"
+     "  - Past Medical History (PMH): Relevant past medical conditions that may impact {chief_complaint}.\n"
+     "  - Medications: All current medications, including dosage and frequency, relevant to {chief_complaint}.\n"
+     "  - Allergies: Known allergies including medications, food, and environmental allergies.\n"
+     "  - Family History: Relevant family medical history impacting {chief_complaint}.\n"
+     "  - Social History: Occupation, smoking history, alcohol consumption, drug use, exercise habits, and living situation, as relevant to {chief_complaint}.\n"
+     "  - Review of Systems (ROS): Only symptoms directly related to {chief_complaint} in different body systems.\n"
+     "- **Suggested Further Investigations**: \n"
+     "  - Justifications for each suggestion based on the initial findings and clinical context of {chief_complaint}."
+     ),
     agent=history_taker,
-    context=[]
-)
+    context=[])
 
 perform_examination_task = Task(
-    description='Perform targeted physical examination based on {chief_complaint} and patient history',
-    expected_output='A thorough physical examination report focusing on relevant body systems',
+    description=
+    'Perform a targeted physical examination based on the patient history and {chief_complaint}. Document findings and suggest additional areas to examine with clinical context justifications related to {chief_complaint}.',
+    expected_output=
+    ("Physical Examination Report for {chief_complaint}:\n"
+     "- **Documented Findings**: \n"
+     "  - General appearance and vitals\n"
+     "  - Detailed findings for relevant systems (neurological, musculoskeletal, cardiovascular, etc.)\n"
+     "- **Suggested Further Examinations**: \n"
+     "  - Explanation for each suggested examination based on clinical context and initial findings related to {chief_complaint}."
+     ),
     agent=examiner,
-    context=[gather_history_task]
-)
+    context=[gather_history_task])
 
 generate_differential_diagnosis_task = Task(
-    description='Generate differential diagnosis and recommend diagnostic tests for {chief_complaint}',
-    expected_output='A prioritized list of potential diagnoses and recommended diagnostic tests, with reasoning based on Bayesian principles',
+    description=
+    'Generate a differential diagnosis based on the patient history and physical examination findings related to {chief_complaint}. Document initial diagnoses and suggest further diagnostic tests with explanations.',
+    expected_output=
+    ("Differential Diagnosis Report for {chief_complaint}:\n"
+     "- **Initial Diagnoses**: \n"
+     "  - Prioritized list with rationales based on {chief_complaint}.\n"
+     "- **Suggested Further Diagnostic Tests**: \n"
+     "  - Rationale for each test based on clinical context and findings related to {chief_complaint}."
+     ),
     agent=diagnostician,
-    context=[gather_history_task, perform_examination_task]
-)
+    context=[gather_history_task, perform_examination_task])
+
+bayesian_reasoning_task = Task(
+    description=
+    'Refine the differential diagnosis using Bayesian reasoning for {chief_complaint}. Adjust probabilities based on baseline knowledge and current findings. Document refined diagnoses and suggest further diagnostic considerations.',
+    expected_output=
+    ("Bayesian Analysis Report for {chief_complaint}:\n"
+     "- **Refined Diagnoses**: \n"
+     "  - Adjusted probabilities with explanations based on {chief_complaint}.\n"
+     "- **Suggested Diagnostic Considerations**: \n"
+     "  - Justifications based on Bayesian reasoning and clinical context of {chief_complaint}."
+     ),
+    agent=diagnostician,
+    context=[generate_differential_diagnosis_task])
+
+synthesize_diagnostic_framework_task = Task(
+    description=
+    'Integrate all gathered information into a comprehensive diagnostic framework for {chief_complaint}. Document key findings and highlight clinical points with rationales for diagnostic conclusions.',
+    expected_output=
+    ("Diagnostic Framework for {chief_complaint}:\n"
+     "- **Integrated Findings**: \n"
+     "  - Synthesis of all findings with key clinical points related to {chief_complaint}.\n"
+     "- **Rationales for Diagnostic Conclusions**: \n"
+     "  - Justifications based on integrated data for {chief_complaint}."),
+    agent=diagnostician,
+    context=[
+        gather_history_task, perform_examination_task,
+        generate_differential_diagnosis_task, bayesian_reasoning_task
+    ])
 
 # Create the crew
-crew = Crew(
-    agents=[history_taker, examiner, diagnostician],
-    tasks=[
-        gather_history_task,
-        perform_examination_task,
-        generate_differential_diagnosis_task
-    ],
-    process=Process.sequential
-)
+crew = Crew(agents=[history_taker, examiner, diagnostician],
+            tasks=[
+                gather_history_task, perform_examination_task,
+                generate_differential_diagnosis_task, bayesian_reasoning_task,
+                synthesize_diagnostic_framework_task
+            ],
+            process=Process.sequential)
 
 # Streamlit input
 chief_complaint = st.text_input("Enter chief complaint:", "")
@@ -125,9 +172,9 @@ if st.button("Start Medical Assessment"):
         try:
             with st.spinner('Running CrewAI tasks...'):
                 result = crew.kickoff(inputs=inputs)
-                
+
                 st.success("Assessment completed!")
-                
+
                 detailed_results = []
                 for task in crew.tasks:
                     task_result = task.output
@@ -135,11 +182,11 @@ if st.button("Start Medical Assessment"):
                         "task": task.description,
                         "result": task_result
                     })
-                
+
                 # Store detailed results and assessment result in session state
                 st.session_state['detailed_results'] = detailed_results
                 st.session_state['assessment_result'] = result
-                
+
         except Exception as e:
             st.error(f"An error occurred: {str(e)}")
     else:
@@ -148,7 +195,7 @@ if st.button("Start Medical Assessment"):
 # Show assessment result
 if 'assessment_result' in st.session_state:
     st.write(st.session_state['assessment_result'])
-    
+
 # Show detailed results in an expander
 if 'detailed_results' in st.session_state:
     with st.expander("Show detailed results"):

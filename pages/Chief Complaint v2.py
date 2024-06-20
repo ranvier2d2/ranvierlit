@@ -1,7 +1,6 @@
 import os
 import streamlit as st
 import nest_asyncio
-import asyncio
 from pathlib import Path
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
