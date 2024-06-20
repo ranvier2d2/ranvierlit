@@ -79,26 +79,26 @@ diagnostician = Agent(
 # Define tasks with context and error handling
 gather_history_task = Task(
     description=
-    'Collect a comprehensive patient history based on {chief_complaint}. Document findings from user inputs and suggest areas needing further exploration based on the clinical context of {chief_complaint}.',
+    'Collect a comprehensive patient history based on chief complaint: {chief_complaint}. Document findings from user inputs and suggest areas needing further exploration based on the clinical context of {chief_complaint}.',
     expected_output=
-    ("Patient History Report for {chief_complaint}:\n"
+    ("Patient History Report and Suggested Relevant Anamnestic Investigation:\n"
      "- **Documented Findings**: \n"
-     "  - History of Present Illness (HPI): Onset, duration, quality, severity, location, and associated symptoms related to {chief_complaint}.\n"
-     "  - Past Medical History (PMH): Relevant past medical conditions that may impact {chief_complaint}.\n"
-     "  - Medications: All current medications, including dosage and frequency, relevant to {chief_complaint}.\n"
+     "  - History of Present Illness (HPI): Onset, duration, quality, severity, location, and associated symptoms related to chief complaint.\n"
+     "  - Past Medical History (PMH): Relevant past medical conditions that may impact chief complaint.\n"
+     "  - Medications: All current medications and possible interactions or side effects relevant to the chief complaint.\n"
      "  - Allergies: Known allergies including medications, food, and environmental allergies.\n"
      "  - Family History: Relevant family medical history impacting {chief_complaint}.\n"
-     "  - Social History: Occupation, smoking history, alcohol consumption, drug use, exercise habits, and living situation, as relevant to {chief_complaint}.\n"
+     "  - Social History: Occupation, smoking history, alcohol consumption, drug use, exercise habits, and living situation, as relevant to chief complaint.\n"
      "  - Review of Systems (ROS): Only symptoms directly related to {chief_complaint} in different body systems.\n"
-     "- **Suggested Further Investigations**: \n"
-     "  - Justifications for each suggestion based on the initial findings and clinical context of {chief_complaint}."
+     "- **Suggested Further Anamnesis**: \n"
+     "  - Justifications for each suggestion based on the initial findings and clinical context of the chief complaint."
      ),
     agent=history_taker,
     context=[])
 
 perform_examination_task = Task(
     description=
-    'Perform a targeted physical examination based on the patient history and {chief_complaint}. Document findings and suggest additional areas to examine with clinical context justifications related to {chief_complaint}.',
+    'Create a targeted physical examination template based on the patient history: {chief_complaint}. Document findings and suggest additional areas to examine with clinical context justifications related to this particular patient.',
     expected_output=
     ("Physical Examination Report for {chief_complaint}:\n"
      "- **Documented Findings**: \n"
@@ -112,13 +112,13 @@ perform_examination_task = Task(
 
 generate_differential_diagnosis_task = Task(
     description=
-    'Generate a differential diagnosis based on the patient history and physical examination findings related to {chief_complaint}. Document initial diagnoses and suggest further diagnostic tests with explanations.',
+    'Generate a differential diagnosis based on the patient history and physical examination findings related to chief complaint: {chief_complaint}. Document initial diagnoses and suggest further diagnostic tests with explanations.',
     expected_output=
     ("Differential Diagnosis Report for {chief_complaint}:\n"
      "- **Initial Diagnoses**: \n"
-     "  - Prioritized list with rationales based on {chief_complaint}.\n"
+     "  - Prioritized list with rationales based on chief complaint.\n"
      "- **Suggested Further Diagnostic Tests**: \n"
-     "  - Rationale for each test based on clinical context and findings related to {chief_complaint}."
+     "  - Rationale for each test based on clinical context and findings related to chief complaint."
      ),
     agent=diagnostician,
     context=[gather_history_task, perform_examination_task])
@@ -127,9 +127,9 @@ bayesian_reasoning_task = Task(
     description=
     'Refine the differential diagnosis using Bayesian reasoning for {chief_complaint}. Adjust probabilities based on baseline knowledge and current findings. Document refined diagnoses and suggest further diagnostic considerations.',
     expected_output=
-    ("Bayesian Analysis Report for {chief_complaint}:\n"
+    ("Bayesian Analysis Report for chief complaint: {chief_complaint}:\n"
      "- **Refined Diagnoses**: \n"
-     "  - Adjusted probabilities with explanations based on {chief_complaint}.\n"
+     "  - Adjusted probabilities with explanations based on chief complaint.\n"
      "- **Suggested Diagnostic Considerations**: \n"
      "  - Justifications based on Bayesian reasoning and clinical context of {chief_complaint}."
      ),
@@ -140,11 +140,11 @@ synthesize_diagnostic_framework_task = Task(
     description=
     'Integrate all gathered information into a comprehensive diagnostic framework for {chief_complaint}. Document key findings and highlight clinical points with rationales for diagnostic conclusions.',
     expected_output=
-    ("Diagnostic Framework for {chief_complaint}:\n"
+    ("Diagnostic Framework for the chief complaint:\n"
      "- **Integrated Findings**: \n"
-     "  - Synthesis of all findings with key clinical points related to {chief_complaint}.\n"
+     "  - Synthesis of all findings with key clinical points related to the chief complaint.\n"
      "- **Rationales for Diagnostic Conclusions**: \n"
-     "  - Justifications based on integrated data for {chief_complaint}."),
+     "  - Justifications based on integrated data for this chief complaint."),
     agent=diagnostician,
     context=[
         gather_history_task, perform_examination_task,
