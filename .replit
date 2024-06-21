@@ -9,5 +9,8 @@ run = "streamlit run --server.address 0.0.0.0 --server.headless true --server.en
 deploymentTarget = "cloudrun"
 
 [[ports]]
+localPort = 8085
+
+[[ports]]
 localPort = 8501
 externalPort = 80

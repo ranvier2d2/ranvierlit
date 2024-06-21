@@ -10,7 +10,7 @@ nest_asyncio.apply()
 
 # Set page config once here
 st.set_page_config(page_title='Ranvier - Kronika', page_icon='🧠')
-st.title("Review Enfermedades por IA ✨ ")
+st.title("Review Enfermedades por IA ✨")
 st.write(
     "Welcome to the Ranvier-Kronika AI Skill sites. Use the sidebar to navigate to different pages."
 )
@@ -18,8 +18,13 @@ st.write(
 
 # Function to load CSS
 def load_css(file_name):
-    with open(file_name) as f:
-        st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    try:
+        with open(file_name) as f:
+            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.error(
+            "CSS file not found. Please ensure the 'styles.css' file is present."
+        )
 
 
 # Load the CSS file
@@ -27,13 +32,13 @@ load_css("styles.css")
 
 with st.expander('Acerca de esta aplicación'):
     st.markdown('''
-    **¿Qué puede hacer esta aplicación?**
-    Esta aplicación permite a los usuarios iniciar un proceso de investigación integral sobre enfermedades específicas utilizando agentes de CrewAI. Los agentes recopilarán, analizarán y compilarán la información en una revisión coherente.
-    
-    **¿Cómo usar la aplicación?**
-    1. Ingresa el nombre de una enfermedad en el campo de entrada.
-    2. Haz clic en el botón "Iniciar Review" para comenzar el proceso.
-    3. Los resultados se mostrarán una vez que la investigación esté completa.
+        **¿Qué puede hacer esta aplicación?**
+        Esta aplicación permite a los usuarios iniciar un proceso de investigación integral sobre enfermedades específicas utilizando agentes de CrewAI. Los agentes recopilarán, analizarán y compilarán la información en una revisión coherente.
+
+        **¿Cómo usar la aplicación?**
+        1. Ingresa el nombre de una enfermedad en el campo de entrada.
+        2. Haz clic en el botón "Iniciar Review" para comenzar el proceso.
+        3. Los resultados se mostrarán una vez que la investigación esté completa.
     ''')
 
 # Ensure there is an event loop
@@ -44,7 +49,7 @@ except RuntimeError as e:
         loop = asyncio.new_event_loop()
         asyncio.set_event_loop(loop)
 
-# Retrieve the API key from Replit secrets
+# Retrieve the API key from environment variables
 google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
@@ -53,109 +58,154 @@ if not google_api_key:
     )
     st.stop()
 
-# Initialize the language model
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0, max_output_tokens=8192)
+# Set up the customization options
+st.sidebar.title('Customization')
 
+# Expander for explanations
+with st.sidebar.expander('Explicaciones del Modelo y Parámetros'):
+    st.markdown('''
+    **Selección de Modelo:**
+    - **Gemini 1.5 Flash:** Modelo más reciente de Google. Enfocado en balancear calidad de respuesta, mayor rapidez y menor precio.
+    - **Gemini 1.5 Pro:** Un modelo premium ligeramente más lento, pero más potente y capaz de generar salidas detalladas y complejas.
+
+    **Temperatura:**
+    - Controla la creatividad del modelo. Valores más bajos hacen que la salida sea más determinista, mientras que valores más altos la hacen más creativa y variada.
+
+    **Máximo de Tokens de Salida:**
+    - Determina el número máximo de tokens (2-3 tokens son una palabra) que el modelo puede generar. Valores más altos permiten respuestas más largas.
+    ''')
+
+# Model selection
+model_option = st.sidebar.selectbox(
+    'Elige un modelo',
+    ['Gemini 1.5 Flash', 'Gemini 1.5 Pro'],
+    index=0  # Default value set to 'Gemini Flash'
+)
+
+# Model parameters
+temperature = st.sidebar.slider('Temperature', 0.0, 1.0, 0.0)
+max_output_tokens = st.sidebar.slider('Max Tokens de Salida',
+                                            min_value=2000,
+                                            max_value=8192,
+                                            value=8192)
+
+# Initialize the language model based on the selected option
+try:
+    if model_option == 'Gemini 1.5 Flash':
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest",
+                                     temperature=temperature,
+                                     max_output_tokens=max_output_tokens)
+    elif model_option == 'Gemini 1.5 Pro':
+        llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
+                                     temperature=temperature,
+                                     max_output_tokens=max_output_tokens)
+    st.sidebar.success(f'Model initialized: {model_option}')
+except Exception as e:
+    st.sidebar.error(f'Error initializing model: {e}')
 # Define agents with verbose mode and backstories
 researcher = Agent(
-    role='Medico Internista Jefe de Reunion Clinica',
-    goal='Recopilar información completa sobre {disease_name}',
+    role='Epidemiologist and Clinical Investigator',
+    goal=
+    'Conduct an in-depth investigation into the clinical and epidemiological aspects of {disease_name}',
     tools=[],
     verbose=True,
     backstory=
-    ("Un experimentado investigador médico con enfoque en epidemiología y fisiopatología.\n"
-     "Para investigar {disease_name}, recopila información sobre:\n"
-     "1. Características clínicas clave: signos, síntomas, sistemas corporales afectados, curso de la enfermedad y pronóstico\n"
-     "2. Epidemiología: incidencia, prevalencia, poblaciones de alto riesgo, factores de riesgo y causas\n"
-     "3. Fisiopatología: mecanismos biológicos subyacentes, función orgánica alterada, factores genéticos y ambientales\n"
-     "4. Estrategias diagnósticas: evaluación diagnóstica típica, hallazgos clave en la historia y el examen, pruebas de laboratorio y estudios de imagen, pruebas especializadas"
+    ("A seasoned epidemiologist with extensive experience in investigating infectious diseases and chronic conditions. "
+     "Your goal is to compile comprehensive clinical data, epidemiological statistics, and insights into {disease_name}. "
+     "You will focus on: \n"
+     "1. Clinical features: symptoms, progression, prognosis.\n"
+     "2. Epidemiology: incidence, prevalence, high-risk populations, risk factors, and causes.\n"
+     "3. Diagnosis: diagnostic methods, key findings, lab tests, and imaging studies."
      ),
     llm=llm,
     allow_delegation=False)
 
 analyst = Agent(
-    role='Epidemiologo Jefe',
-    goal='Analizar y sintetizar datos recopilados sobre {disease_name}',
+    role='Treatment Analyst and Data Synthesizer',
+    goal=
+    'Analyze the collected data and synthesize it into actionable insights regarding the management and outcomes of {disease_name}',
     tools=[],
     verbose=True,
     backstory=
-    ("Un hábil analista de datos con experiencia en análisis de datos médicos y predicción de resultados.\n"
-     "Al analizar información sobre {disease_name}:\n"
-     "1. Evaluar enfoques de manejo: objetivos del tratamiento, terapias médicas y quirúrgicas, cuidado multidisciplinario\n"
-     "2. Analizar complicaciones y seguimiento: principales complicaciones, planes de monitoreo y seguimiento, factores que influyen en los resultados\n"
-     "3. Utilizar recursos de información de alta calidad: libros de texto médicos, artículos de revistas, guías de sociedades internacionales, recomendaciones de expertos"
+    ("An expert in medical data analysis and outcome prediction. Your task is to analyze treatment options, potential complications, "
+     "and follow-up strategies for {disease_name}. Focus on: \n"
+     "1. Treatment approaches: medical, surgical, multidisciplinary care.\n"
+     "2. Complications and follow-up: key complications, monitoring plans, factors influencing outcomes.\n"
+     "3. Evidence-based resources: medical textbooks, journal articles, international society guidelines, and expert opinions."
      ),
     llm=llm,
     allow_delegation=False)
 
 writer = Agent(
-    role='Medico Revisor Jefe de Reunion Clinica',
-    goal='Compilar hallazgos sobre {disease_name} en una revisión coherente',
+    role='Medical Writer and Reviewer',
+    goal=
+    'Compile and structure the findings into a coherent and comprehensive medical review',
     tools=[],
     verbose=True,
     backstory=
-    ("Un escritor médico competente con habilidad para sintetizar información compleja en documentos claros y concisos.\n"
-     "Para escribir una revisión completa sobre {disease_name}:\n"
-     "1. Sintetizar información para proporcionar una imagen completa de la enfermedad\n"
-     "2. Explicar cómo {disease_name} encaja en los diagnósticos diferenciales de síntomas comunes\n"
-     "3. Discutir cómo se puede aplicar el conocimiento clínicamente para mejorar el razonamiento diagnóstico y la toma de decisiones\n"
-     "4. Utilizar una organización clara con secciones sobre características clínicas, epidemiología, fisiopatología, diagnóstico, manejo y complicaciones"
-     ),
-    llm=llm,
-    allow_delegation=False)
-
+    ("A proficient medical writer skilled in synthesizing complex medical information into clear and concise documents. "
+     "Your task is to write a detailed review on {disease_name}, incorporating: \n"
+     "1. Clinical features and epidemiology.\n"
+     "2. Pathophysiology and diagnosis.\n"
+     "3. Management strategies and complications.\n"
+     "4. Clinical applications and decision-making aids."),
+    llm=ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
+                               temperature=temperature,
+                               max_output_tokens=8192))
 # Define tasks
 collect_clinical_features_task = Task(
     description=
-    'Recopilar información sobre los signos, síntomas y manifestaciones clínicas típicas de {disease_name}',
+    'Gather detailed information about the signs, symptoms, and clinical manifestations of {disease_name}',
     expected_output=
-    'Una lista detallada de características clínicas y curso de la enfermedad de {disease_name}',
+    'A comprehensive list of clinical features and the progression of {disease_name}',
     agent=researcher,
     context=[])
 
 determine_epidemiology_task = Task(
     description=
-    'Determinar la incidencia, prevalencia y factores de riesgo de {disease_name}',
-    expected_output='Un resumen de datos epidemiológicos de {disease_name}',
+    'Determine the incidence, prevalence, and risk factors associated with {disease_name}',
+    expected_output=
+    'A detailed summary of epidemiological data for {disease_name}',
     agent=researcher,
     context=[collect_clinical_features_task])
 
 review_pathophysiology_task = Task(
     description=
-    'Revisar los mecanismos biológicos y factores que conducen a {disease_name}',
+    'Review the biological mechanisms and factors leading to {disease_name}',
     expected_output=
-    'Una explicación detallada de la fisiopatología de {disease_name}',
+    'An in-depth explanation of the pathophysiology of {disease_name}',
     agent=researcher,
     context=[determine_epidemiology_task])
 
 familiarize_diagnostic_workup_task = Task(
     description=
-    'Familiarizarse con la evaluación diagnóstica, hallazgos clave y pruebas especializadas para {disease_name}',
+    'Familiarize yourself with diagnostic methods, key findings, and specialized tests for {disease_name}',
     expected_output=
-    'Una lista completa de estrategias diagnósticas para {disease_name}',
+    'A comprehensive list of diagnostic strategies for {disease_name}',
     agent=researcher,
     context=[review_pathophysiology_task])
 
 review_management_approaches_task = Task(
     description=
-    'Revisar tratamientos médicos y quirúrgicos, y cuidados multidisciplinarios para {disease_name}',
-    expected_output='Un resumen de enfoques de manejo para {disease_name}',
+    'Review evidence-based medical and surgical treatments and multidisciplinary care for {disease_name}',
+    expected_output=
+    'A summary of evidence-based treatment approaches for {disease_name}',
     agent=analyst,
     context=[familiarize_diagnostic_workup_task])
 
 recognize_complications_task = Task(
     description=
-    'Reconocer complicaciones, monitoreo y planes de seguimiento para {disease_name}',
+    'Recognize potential complications, monitoring plans, and follow-up strategies for {disease_name}',
     expected_output=
-    'Una lista detallada de complicaciones y estrategias de seguimiento para {disease_name}',
+    'A detailed list of complications and follow-up strategies for {disease_name}',
     agent=analyst,
     context=[review_management_approaches_task])
 
 synthesize_information_task = Task(
     description=
-    'Sintetizar toda la información recopilada sobre {disease_name} en una revisión completa',
+    'Synthesize all collected information into a comprehensive review of {disease_name}',
     expected_output=
-    'Un documento de revisión bien estructurado que integre el conocimiento en el razonamiento clínico para {disease_name}, incluyendo los 5-10 puntos clínicos más importantes',
+    'A well-structured document integrating key clinical points and knowledge into clinical reasoning for {disease_name}, presented in Markdown translated to Spanish',
     agent=writer,
     context=[
         collect_clinical_features_task, determine_epidemiology_task,
@@ -180,13 +230,10 @@ disease_name = st.text_input("Ingresa una enfermedad o sindrome:", "")
 if st.button("Iniciar Review"):
     if disease_name:
         st.write(f"Researching {disease_name}...")
-        inputs = {
-            "disease_name": disease_name,
-        }
+        inputs = {"disease_name": disease_name}
         try:
             with st.spinner('Running CrewAI tasks...'):
                 result = crew.kickoff(inputs=inputs)
-
                 st.success("Research completed!")
 
                 detailed_results = []

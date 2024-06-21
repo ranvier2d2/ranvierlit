@@ -8,3 +8,4 @@ nest_asyncio
 streamlit
 langchain_groq
 langchain-openai
+langchain_anthropic
