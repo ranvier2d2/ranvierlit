@@ -5,7 +5,7 @@ run = "streamlit run Home.py"
 channel = "stable-23_11"
 
 [deployment]
-run = "streamlit run --server.address 0.0.0.0 --server.headless true --server.enableCORS=false --server.enableWebsocketCompression=false Home.py"
+run = "streamlit run --server.address 0.0.0.0 --server.headless true --server.enableCORS=true --server.enableXsrfProtection=true Home.py"
 deploymentTarget = "cloudrun"
 
 [[ports]]

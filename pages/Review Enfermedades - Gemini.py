@@ -4,6 +4,9 @@ import nest_asyncio
 import asyncio
 from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
+from concurrent.futures import ThreadPoolExecutor
+import base64
+import time
 
 # Apply nest_asyncio to manage nested event loops
 nest_asyncio.apply()
@@ -18,62 +21,53 @@ st.write(
 
 # Function to load CSS
 def load_css(file_name):
-    try:
-        with open(file_name) as f:
-            st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
-    except FileNotFoundError:
-        st.error(
-            "CSS file not found. Please ensure the 'styles.css' file is present."
-        )
+	try:
+		with open(file_name) as f:
+			st.markdown(f'<style>{f.read()}</style>', unsafe_allow_html=True)
+	except FileNotFoundError:
+		st.error(
+		    "CSS file not found. Please ensure the 'styles.css' file is present.")
 
 
 # Load the CSS file
 load_css("styles.css")
 
 with st.expander('Acerca de esta aplicación'):
-    st.markdown('''
-        **¿Qué puede hacer esta aplicación?**
-        Esta aplicación permite a los usuarios iniciar un proceso de investigación integral sobre enfermedades específicas utilizando agentes de CrewAI. Los agentes recopilarán, analizarán y compilarán la información en una revisión coherente.
+	st.markdown('''
+				**¿Qué puede hacer esta aplicación?**
+				Esta aplicación permite a los usuarios iniciar un proceso de investigación integral sobre enfermedades específicas utilizando agentes de CrewAI. Los agentes recopilarán, analizarán y compilarán la información en una revisión coherente.
 
-        **¿Cómo usar la aplicación?**
-        1. Ingresa el nombre de una enfermedad en el campo de entrada.
-        2. Haz clic en el botón "Iniciar Review" para comenzar el proceso.
-        3. Los resultados se mostrarán una vez que la investigación esté completa.
-    ''')
-
-# Ensure there is an event loop
-try:
-    loop = asyncio.get_event_loop()
-except RuntimeError as e:
-    if "There is no current event loop in thread" in str(e):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
+				**¿Cómo usar la aplicación?**
+				1. Ingresa el nombre de una enfermedad en el campo de entrada.
+				2. Haz clic en el botón "Iniciar Review" para comenzar el proceso.
+				3. Los resultados se mostrarán una vez que la investigación esté completa.
+		''')
 
 # Retrieve the API key from environment variables
 google_api_key = os.getenv("GOOGLE_API_KEY")
 
 if not google_api_key:
-    st.error(
-        "GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable."
-    )
-    st.stop()
+	st.error(
+	    "GOOGLE_API_KEY environment variable not set. Please set the GOOGLE_API_KEY environment variable."
+	)
+	st.stop()
 
 # Set up the customization options
 st.sidebar.title('Customization')
 
 # Expander for explanations
 with st.sidebar.expander('Explicaciones del Modelo y Parámetros'):
-    st.markdown('''
-    **Selección de Modelo:**
-    - **Gemini 1.5 Flash:** Modelo más reciente de Google. Enfocado en balancear calidad de respuesta, mayor rapidez y menor precio.
-    - **Gemini 1.5 Pro:** Un modelo premium ligeramente más lento, pero más potente y capaz de generar salidas detalladas y complejas.
+	st.markdown('''
+		**Selección de Modelo:**
+		- **Gemini 1.5 Flash:** Modelo más reciente de Google. Enfocado en balancear calidad de respuesta, mayor rapidez y menor precio.
+		- **Gemini 1.5 Pro:** Un modelo premium ligeramente más lento, pero más potente y capaz de generar salidas detalladas y complejas.
 
-    **Temperatura:**
-    - Controla la creatividad del modelo. Valores más bajos hacen que la salida sea más determinista, mientras que valores más altos la hacen más creativa y variada.
+		**Temperatura:**
+		- Controla la creatividad del modelo. Valores más bajos hacen que la salida sea más determinista, mientras que valores más altos la hacen más creativa y variada.
 
-    **Máximo de Tokens de Salida:**
-    - Determina el número máximo de tokens (2-3 tokens son una palabra) que el modelo puede generar. Valores más altos permiten respuestas más largas.
-    ''')
+		**Máximo de Tokens de Salida:**
+		- Determina el número máximo de tokens (2-3 tokens son una palabra) que el modelo puede generar. Valores más altos permiten respuestas más largas.
+		''')
 
 # Model selection
 model_option = st.sidebar.selectbox(
@@ -85,23 +79,24 @@ model_option = st.sidebar.selectbox(
 # Model parameters
 temperature = st.sidebar.slider('Temperature', 0.0, 1.0, 0.0)
 max_output_tokens = st.sidebar.slider('Max Tokens de Salida',
-                                            min_value=2000,
-                                            max_value=8192,
-                                            value=8192)
+                                      min_value=2000,
+                                      max_value=8192,
+                                      value=8192)
 
 # Initialize the language model based on the selected option
 try:
-    if model_option == 'Gemini 1.5 Flash':
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest",
-                                     temperature=temperature,
-                                     max_output_tokens=max_output_tokens)
-    elif model_option == 'Gemini 1.5 Pro':
-        llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
-                                     temperature=temperature,
-                                     max_output_tokens=max_output_tokens)
-    st.sidebar.success(f'Model initialized: {model_option}')
+	if model_option == 'Gemini 1.5 Flash':
+		llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest",
+		                             temperature=temperature,
+		                             max_output_tokens=max_output_tokens)
+	elif model_option == 'Gemini 1.5 Pro':
+		llm = ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
+		                             temperature=temperature,
+		                             max_output_tokens=max_output_tokens)
+	st.sidebar.success(f'Model initialized: {model_option}')
 except Exception as e:
-    st.sidebar.error(f'Error initializing model: {e}')
+	st.sidebar.error(f'Error initializing model: {e}')
+
 # Define agents with verbose mode and backstories
 researcher = Agent(
     role='Epidemiologist and Clinical Investigator',
@@ -149,9 +144,9 @@ writer = Agent(
      "2. Pathophysiology and diagnosis.\n"
      "3. Management strategies and complications.\n"
      "4. Clinical applications and decision-making aids."),
-    llm=ChatGoogleGenerativeAI(model="gemini-1.5-pro-001",
-                               temperature=temperature,
-                               max_output_tokens=8192))
+    llm=llm,
+    allow_delegation=False)
+
 # Define tasks
 collect_clinical_features_task = Task(
     description=
@@ -205,7 +200,7 @@ synthesize_information_task = Task(
     description=
     'Synthesize all collected information into a comprehensive review of {disease_name}',
     expected_output=
-    'A well-structured document integrating key clinical points and knowledge into clinical reasoning for {disease_name}, presented in Markdown translated to Spanish',
+    'A well-structured document in Spanish. It must integrate key clinical points and knowledge into clinical reasoning for {disease_name}, presented in Markdown, in professional technical language and suggesting further evidence-based resources.',
     agent=writer,
     context=[
         collect_clinical_features_task, determine_epidemiology_task,
@@ -224,43 +219,93 @@ crew = Crew(agents=[researcher, analyst, writer],
             ],
             process=Process.sequential)
 
+
+# Function to run the CrewAI process asynchronously
+async def run_crewai_process(inputs):
+	loop = asyncio.get_running_loop()
+	with ThreadPoolExecutor() as pool:
+		result = await loop.run_in_executor(pool, crew.kickoff, inputs)
+	return result
+
+
+# Modify the run_and_store_result function
+async def run_and_store_result(inputs):
+	result = await run_crewai_process(inputs)
+	st.session_state['task_result'] = result
+	st.session_state['task_running'] = False
+	st.session_state['task_completed'] = True
+
+
+# Modify the start_process function
+def start_process(disease_name):
+	if 'task_running' not in st.session_state or not st.session_state[
+	    'task_running']:
+		st.session_state['task_running'] = True
+		st.session_state['task_result'] = None
+		st.session_state['task_completed'] = False
+		inputs = {"disease_name": disease_name}
+
+		loop = asyncio.get_event_loop()
+		if loop.is_running():
+			asyncio.create_task(run_and_store_result(inputs))
+		else:
+			loop.run_until_complete(run_and_store_result(inputs))
+
+#add this new function to create a download link for the markdown file:
+def get_binary_file_downloader_html(bin_file, file_label='File'):
+	with open(bin_file, 'rb') as f:
+			data = f.read()
+	bin_str = base64.b64encode(data).decode()
+	href = f'<a href="data:application/octet-stream;base64,{bin_str}" download="{os.path.basename(bin_file)}">Download {file_label}</a>'
+	return href
+
 # Streamlit input
 disease_name = st.text_input("Ingresa una enfermedad o sindrome:", "")
 
 if st.button("Iniciar Review"):
-    if disease_name:
-        st.write(f"Researching {disease_name}...")
-        inputs = {"disease_name": disease_name}
-        try:
-            with st.spinner('Running CrewAI tasks...'):
-                result = crew.kickoff(inputs=inputs)
-                st.success("Research completed!")
+	if disease_name:
+		start_process(disease_name)
+	else:
+		st.warning("Please enter a disease name.")
 
-                detailed_results = []
-                for task in crew.tasks:
-                    task_result = task.output
-                    detailed_results.append({
-                        "task": task.description,
-                        "result": task_result
-                    })
+# Display task progress or results
+if 'task_running' in st.session_state:
+		if st.session_state['task_running']:
+				st.write("Please wait while the task is running...")
 
-                # Store detailed results and research result in session state
-                st.session_state['detailed_results'] = detailed_results
-                st.session_state['research_result'] = result
+				# Display task list
+				for i, task in enumerate(crew.tasks):
+						if i < st.session_state.get('current_task', 0):
+								st.success(f"✅ {task.description}")
+						elif i == st.session_state.get('current_task', 0):
+								st.info(f"🔄 {task.description}")
+						else:
+								st.write(f"⏳ {task.description}")
 
-        except Exception as e:
-            st.error(f"An error occurred: {str(e)}")
-    else:
-        st.warning("Please enter a disease name.")
+				time.sleep(1)  # Add a small delay to prevent excessive reruns
+				st.rerun()
+		elif st.session_state.get('task_completed', False):
+				st.success("Research completed!")
+				result = st.session_state['task_result']
+				st.write(result)
 
-# Show research result
-if 'research_result' in st.session_state:
-    st.write(st.session_state['research_result'])
+				# Add 'Copy to Clipboard' button
+				if st.button('Copy to Clipboard'):
+						st.code(result, language='markdown')
+						st.info('Please use Ctrl+C (or Cmd+C on Mac) to copy the text above.')
 
-# Show detailed results in an expander
-if 'detailed_results' in st.session_state:
-    with st.expander("Show detailed results"):
-        for detail in st.session_state['detailed_results']:
-            st.write(f"**Task:** {detail['task']}")
-            st.write(f"**Result:** {detail['result']}")
-            st.write("---")
+				# Add 'Download as Markdown' button
+				if st.button('Download as Markdown'):
+						with open('result.md', 'w', encoding='utf-8') as f:
+								f.write(result)
+						st.markdown(get_binary_file_downloader_html('result.md', 'Result'), unsafe_allow_html=True)
+
+				# Show detailed results in an expander
+				with st.expander("Show detailed results"):
+						for task in crew.tasks:
+								st.write(f"**Task:** {task.description}")
+								if hasattr(task, 'output') and task.output is not None:
+										st.write(f"**Result:** {task.output}")
+								else:
+										st.write("**Result:** No output available for this task.")
+								st.write("---")
